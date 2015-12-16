@@ -103,6 +103,8 @@ int main(int argc, const char **argv) {
 		atoi(argv[3]));
 	printf("confess=\x1b[33m%d\x1b[39m, cheat=\x1b[33m%d\x1b[39m, betrayed=\x1b[33m%d\x1b[39m, silence=\x1b[33m%d\x1b[39m\n",
 		confess, cheat, betrayed, silence);
+	printf("\x1b[33m%d%%\x1b[39m chance of a 50%% mixed signal\n",
+		badChance);
 	printf("playing \x1b[33m%d\x1b[39m games\x1b[m\n\n",
 		games);
 
