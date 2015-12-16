@@ -5,6 +5,8 @@
 #include "strategy.h"
 
 #define MAX_ROUNDS 1000000
+/* 2=rounds, 1=games, 0=war */
+#define VERBOSE 0
 
 extern const Strategy * always_fair_strategy();
 extern const Strategy * always_cheat_strategy();
@@ -130,51 +132,69 @@ int main(int argc, const char **argv) {
 					rightChoice = !rightChoice;
 				}
 
-				printf("*");
+				if (VERBOSE >= 2) {
+					printf("*");
+				}
 			}
 
 			if (leftChoice && rightChoice) {
 				leftPts += confess;
 				rightPts += confess;
-				printf("\x1b[33m^\x1b[m");
+				if (VERBOSE >= 2) {
+					printf("\x1b[33m^\x1b[m");
+				}
 			} else if (leftChoice && !rightChoice) {
 				leftPts += cheat;
 				rightPts += betrayed;
-				printf("\x1b[31m<\x1b[m");
+				if (VERBOSE >= 2) {
+					printf("\x1b[31m<\x1b[m");
+				}
 			} else if (!leftChoice && rightChoice) {
 				rightPts += cheat;
 				leftPts += betrayed;
-				printf("\x1b[32m>\x1b[m");
+				if (VERBOSE >= 2) {
+					printf("\x1b[32m>\x1b[m");
+				}
 			} else {
 				leftPts += silence;
 				rightPts += silence;
-				printf("\x1b[34m.\x1b[m");
+				if (VERBOSE >= 2) {
+					printf("\x1b[34m.\x1b[m");
+				}
 			}
 
 			left->report(leftData, rightChoice);
 			right->report(rightData, leftChoice);
 
 			if (leftPts <= 0 && rightPts <= 0) {
-				printf("\n\n\x1b[1mreached \x1b[33mstalemate\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-					count);
+				if (VERBOSE >= 1) {
+					printf("\n\n\x1b[1mreached \x1b[33mstalemate\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+						count);
+				}
 				break;
 			} else if (leftPts <= 0) {
-				printf("\n\n\x1b[1;32m%s\x1b[39m defeated \x1b[31m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-					argv[2], argv[1], count);
-				printf("\x1b[32m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
-					argv[2], rightPts);
+				if (VERBOSE >= 1) {
+					printf("\n\n\x1b[1;32m%s\x1b[39m defeated \x1b[31m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+						argv[2], argv[1], count);
+					printf("\x1b[32m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
+						argv[2], rightPts);
+				}
 				rightWins++;
 				break;
 			} else if (rightPts <= 0) {
-				printf("\n\n\x1b[1;31m%s\x1b[39m defeated \x1b[32m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-					argv[1], argv[2], count);
-				printf("\x1b[31m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
-					argv[1], leftPts);
+				if (VERBOSE >= 1) {
+					printf("\n\n\x1b[1;31m%s\x1b[39m defeated \x1b[32m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+						argv[1], argv[2], count);
+					printf("\x1b[31m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
+						argv[1], leftPts);
+				}
 				leftWins++;
 				break;
 			} else if (count == MAX_ROUNDS) {
-				printf("\n\n\x1b[1mreached \x1b[33mtruce (timeout)\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-					count);
+				if (VERBOSE >= 1) {
+					printf("\n\n\x1b[1mreached \x1b[33mtruce (timeout)\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+						count);
+				}
 				break;
 			}
 		}
