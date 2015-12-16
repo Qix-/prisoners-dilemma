@@ -1,1 +1,1 @@
-: *.c |> clang -o "%o" %f -Wall -Werror -Wextra -ansi -pedantic |> p-dilemma
+: *.c |> clang -o "%o" %f -O3 -Wall -Werror -Wextra -ansi -pedantic |> p-dilemma
