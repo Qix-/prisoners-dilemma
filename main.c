@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "strategy.h"
 
-#define MAX_ROUNDS 100000
+#define MAX_ROUNDS 1000000
 
 extern const Strategy * always_fair_strategy();
 extern const Strategy * always_cheat_strategy();
@@ -32,6 +33,7 @@ int main(int argc, const char **argv) {
 	int leftChoice;
 	int rightChoice;
 	int count;
+	int badChance;
 
 	int confess;
 	int cheat;
@@ -43,9 +45,10 @@ int main(int argc, const char **argv) {
 	betrayed = -1;
 	silence = 1;
 
+	badChance = 0;
 
 	if (argc < 4) {
-		fprintf(stderr, "usage: <strategy> <strategy> <starting points> [confess pts = -2] [cheat pts = 2] [betrayed pts = -1] [silence pts = 1]\n");
+		fprintf(stderr, "usage: <strategy> <strategy> <starting points> [bad signal chance / 100 = 0 / 100] [confess pts = -2] [cheat pts = 2] [betrayed pts = -1] [silence pts = 1]\n");
 		return 1;
 	}
 
@@ -64,19 +67,23 @@ int main(int argc, const char **argv) {
 	rightData = right->init();
 
 	if (argc >= 5) {
-		confess = atoi(argv[4]);
+		badChance = atoi(argv[4]);
 	}
 
 	if (argc >= 6) {
-		cheat = atoi(argv[5]);
+		confess = atoi(argv[5]);
 	}
 
 	if (argc >= 7) {
-		betrayed = atoi(argv[6]);
+		cheat = atoi(argv[6]);
 	}
 
 	if (argc >= 8) {
-		silence = atoi(argv[7]);
+		betrayed = atoi(argv[7]);
+	}
+
+	if (argc >= 9) {
+		silence = atoi(argv[8]);
 	}
 
 	printf("\x1b[1mtesting \x1b[31m%s\x1b[39m against \x1b[32m%s\x1b[39m\n",
@@ -86,11 +93,25 @@ int main(int argc, const char **argv) {
 	printf("confess=\x1b[33m%d\x1b[39m, cheat=\x1b[33m%d\x1b[39m, betrayed=\x1b[33m%d\x1b[39m, silence=\x1b[33m%d\x1b[m\n\n",
 		confess, cheat, betrayed, silence);
 
+	srand(time(NULL));
+
 	while (1) {
 		count++;
 
 		leftChoice = left->cheat(leftData);
 		rightChoice = right->cheat(rightData);
+
+		if (rand() % 100 < badChance) {
+			if (rand() % 2) {
+				leftChoice = !leftChoice;
+			}
+
+			if (rand() % 2) {
+				rightChoice = !rightChoice;
+			}
+
+			printf("*");
+		}
 
 		if (leftChoice && rightChoice) {
 			leftPts += confess;
