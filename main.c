@@ -35,6 +35,11 @@ int main(int argc, const char **argv) {
 	int count;
 	int badChance;
 
+	int games;
+	int game;
+	int leftWins;
+	int rightWins;
+
 	int confess;
 	int cheat;
 	int betrayed;
@@ -47,8 +52,12 @@ int main(int argc, const char **argv) {
 
 	badChance = 0;
 
+	games = 1;
+	leftWins = 0;
+	rightWins = 0;
+
 	if (argc < 4) {
-		fprintf(stderr, "usage: <strategy> <strategy> <starting points> [bad signal chance / 100 = 0 / 100] [confess pts = -2] [cheat pts = 2] [betrayed pts = -1] [silence pts = 1]\n");
+		fprintf(stderr, "usage: <strategy> <strategy> <starting points> [bad signal chance / 100 = 0] [games = 1] [confess pts = -2] [cheat pts = 2] [betrayed pts = -1] [silence pts = 1]\n");
 		return 1;
 	}
 
@@ -58,111 +67,137 @@ int main(int argc, const char **argv) {
 		return 1;
 	}
 
-	count = 0;
-
-	leftPts = atoi(argv[3]);
-	rightPts = atoi(argv[3]);
-
-	leftData = left->init();
-	rightData = right->init();
-
 	if (argc >= 5) {
 		badChance = atoi(argv[4]);
 	}
 
 	if (argc >= 6) {
-		confess = atoi(argv[5]);
+		games = atoi(argv[5]);
 	}
 
 	if (argc >= 7) {
-		cheat = atoi(argv[6]);
+		confess = atoi(argv[6]);
 	}
 
 	if (argc >= 8) {
-		betrayed = atoi(argv[7]);
+		cheat = atoi(argv[7]);
 	}
 
 	if (argc >= 9) {
-		silence = atoi(argv[8]);
+		betrayed = atoi(argv[8]);
+	}
+
+	if (argc >= 10) {
+		silence = atoi(argv[9]);
 	}
 
 	printf("\x1b[1mtesting \x1b[31m%s\x1b[39m against \x1b[32m%s\x1b[39m\n",
 		argv[1], argv[2]);
 	printf("starting with \x1b[33m%d\x1b[39m points\n",
-		leftPts);
-	printf("confess=\x1b[33m%d\x1b[39m, cheat=\x1b[33m%d\x1b[39m, betrayed=\x1b[33m%d\x1b[39m, silence=\x1b[33m%d\x1b[m\n\n",
+		atoi(argv[3]));
+	printf("confess=\x1b[33m%d\x1b[39m, cheat=\x1b[33m%d\x1b[39m, betrayed=\x1b[33m%d\x1b[39m, silence=\x1b[33m%d\n",
 		confess, cheat, betrayed, silence);
+	printf("playing \x1b[33m%d\x1b[39m games\x1b[m\n\n",
+		games);
 
 	srand(time(NULL));
 
-	while (1) {
-		count++;
+	for (game = 0; game < games; game++) {
+		count = 0;
 
-		leftChoice = left->cheat(leftData);
-		rightChoice = right->cheat(rightData);
+		leftPts = atoi(argv[3]);
+		rightPts = atoi(argv[3]);
 
-		if (rand() % 100 < badChance) {
-			if (rand() % 2) {
-				leftChoice = !leftChoice;
+		leftData = left->init();
+		rightData = right->init();
+
+		while (1) {
+			count++;
+
+			leftChoice = left->cheat(leftData);
+			rightChoice = right->cheat(rightData);
+
+			if (rand() % 100 < badChance) {
+				if (rand() % 2) {
+					leftChoice = !leftChoice;
+				}
+
+				if (rand() % 2) {
+					rightChoice = !rightChoice;
+				}
+
+				printf("*");
 			}
 
-			if (rand() % 2) {
-				rightChoice = !rightChoice;
+			if (leftChoice && rightChoice) {
+				leftPts += confess;
+				rightPts += confess;
+				printf("\x1b[33m^\x1b[m");
+			} else if (leftChoice && !rightChoice) {
+				leftPts += cheat;
+				rightPts += betrayed;
+				printf("\x1b[31m<\x1b[m");
+			} else if (!leftChoice && rightChoice) {
+				rightPts += cheat;
+				leftPts += betrayed;
+				printf("\x1b[32m>\x1b[m");
+			} else {
+				leftPts += silence;
+				rightPts += silence;
+				printf("\x1b[34m.\x1b[m");
 			}
 
-			printf("*");
+			left->report(leftData, rightChoice);
+			right->report(rightData, leftChoice);
+
+			if (leftPts <= 0 && rightPts <= 0) {
+				printf("\n\n\x1b[1mreached \x1b[33mstalemate\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+					count);
+				break;
+			} else if (leftPts <= 0) {
+				printf("\n\n\x1b[1;32m%s\x1b[39m defeated \x1b[31m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+					argv[2], argv[1], count);
+				printf("\x1b[32m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
+					argv[2], rightPts);
+				rightWins++;
+				break;
+			} else if (rightPts <= 0) {
+				printf("\n\n\x1b[1;31m%s\x1b[39m defeated \x1b[32m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+					argv[1], argv[2], count);
+				printf("\x1b[31m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
+					argv[1], leftPts);
+				leftWins++;
+				break;
+			} else if (count == MAX_ROUNDS) {
+				printf("\n\n\x1b[1mreached \x1b[33mtruce (timeout)\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
+					count);
+				break;
+			}
 		}
 
-		if (leftChoice && rightChoice) {
-			leftPts += confess;
-			rightPts += confess;
-			printf("\x1b[33m^\x1b[m");
-		} else if (leftChoice && !rightChoice) {
-			leftPts += cheat;
-			rightPts += betrayed;
-			printf("\x1b[31m<\x1b[m");
-		} else if (!leftChoice && rightChoice) {
-			rightPts += cheat;
-			leftPts += betrayed;
-			printf("\x1b[32m>\x1b[m");
-		} else {
-			leftPts += silence;
-			rightPts += silence;
-			printf("\x1b[34m.\x1b[m");
+		if (leftData) {
+			free(leftData);
 		}
 
-		left->report(leftData, rightChoice);
-		right->report(rightData, leftChoice);
-
-		if (leftPts <= 0 && rightPts <= 0) {
-			printf("\n\n\x1b[1mreached \x1b[33mstalemate\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-				count);
-			break;
-		} else if (leftPts <= 0) {
-			printf("\n\n\x1b[1;32m%s\x1b[39m defeated \x1b[31m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-				argv[2], argv[1], count);
-			printf("\x1b[32m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
-				argv[2], rightPts);
-			break;
-		} else if (rightPts <= 0) {
-			printf("\n\n\x1b[1;31m%s\x1b[39m defeated \x1b[32m%s\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-				argv[1], argv[2], count);
-			printf("\x1b[31m%s\x1b[39m had \x1b[33m%d\x1b[39m points to spare.\x1b[m\n",
-				argv[1], leftPts);
-			break;
-		} else if (count == MAX_ROUNDS) {
-			printf("\n\n\x1b[1mreached \x1b[33mtruce (timeout)\x1b[39m in \x1b[33m%d\x1b[39m rounds.\n",
-				count);
-			break;
+		if (rightData) {
+			free(rightData);
 		}
 	}
 
-	if (leftData) {
-		free(leftData);
-	}
+	printf("\n\x1b[1mWAR RESULTS:\n");
+	printf("\x1b[31m%s\x1b[39m won \x1b[33m%.2f%%\x1b[39m of the time in \x1b[33m%d\x1b[39m games\n",
+		argv[1], ((float) leftWins / (float) games) * 100.0f, leftWins);
+	printf("\x1b[32m%s\x1b[39m won \x1b[33m%.2f%%\x1b[39m of the time in \x1b[33m%d\x1b[39m games\n",
+		argv[2], ((float) rightWins / (float) games) * 100.0f, rightWins);
 
-	if (rightData) {
-		free(rightData);
+	if (leftWins > rightWins) {
+		printf("\n\x1b[31m%s wins.\x1b[m\n",
+			argv[1]);
+	} else if (rightWins > leftWins) {
+		printf("\n\x1b[32m%s wins.\x1b[m\n",
+			argv[2]);
+	} else {
+		printf("\n\x1b[33mstalemate!\x1b[m\n");
 	}
 
 	return 0;
