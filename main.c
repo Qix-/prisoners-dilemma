@@ -10,6 +10,7 @@ extern const Strategy * always_fair_strategy();
 extern const Strategy * always_cheat_strategy();
 extern const Strategy * tit_for_tat_strategy();
 extern const Strategy * f5_tit_for_tat_strategy();
+extern const Strategy * f10_tit_for_tat_strategy();
 
 const Strategy * resolve_strategy(const char * name) {
 #	define CHECK(n) if (strcmp(#n, name) == 0) return n##_strategy()
@@ -17,6 +18,7 @@ const Strategy * resolve_strategy(const char * name) {
 	CHECK(always_cheat);
 	CHECK(tit_for_tat);
 	CHECK(f5_tit_for_tat);
+	CHECK(f10_tit_for_tat);
 #	undef CHECK
 
 	fprintf(stderr, "unknown strategy: %s\n", name);
